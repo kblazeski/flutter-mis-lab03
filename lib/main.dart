@@ -1,9 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lab03/exams_list.dart';
-import 'package:flutter_lab03/model/Exam.dart';
+import 'package:flutter_lab03/model/exam.dart';
 import 'package:flutter_lab03/new_exam.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
-void main() {
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  var initializationSettingsAndroid =
+      AndroidInitializationSettings('ic_launcher');
+  var initializationSettingsIos = IOSInitializationSettings(
+    requestAlertPermission: true,
+    requestBadgePermission: true,
+    requestSoundPermission: true,
+    onDidReceiveLocalNotification:
+        (int id, String? title, String? body, String? payload) async {},
+  );
+
+  var initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    iOS: initializationSettingsIos,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings,
+      onSelectNotification: (String? payload) async {
+    if (payload != null) {
+      debugPrint('notification payload: ' + payload);
+    }
+  });
+
   runApp(const MyApp());
 }
 
@@ -14,11 +44,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '181103 - Flutter Lab 03',
+      title: '181103 - Flutter Lab 04',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: '181103 - Flutter Lab 03'),
+      home: const MyHomePage(title: '181103 - Flutter Lab 04'),
     );
   }
 }
@@ -33,23 +63,27 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final List<Exam> exams = [
-    const Exam(
+    Exam(
       courseName: 'Mobile Information Systems',
-      examDateTime: '01.12.2021 15:00',
+      examDateTime: DateTime(2022, 1, 1, 17, 0),
     ),
-    const Exam(
+    Exam(
       courseName: 'Mobile Platforms and Programming',
-      examDateTime: '04.12.2021 12:00',
+      examDateTime: DateTime(2022, 1, 8, 12, 30),
     ),
-    const Exam(
+    Exam(
       courseName: 'Web Based Systems',
-      examDateTime: '27.11.2021 11:30',
+      examDateTime: DateTime(2022, 1, 21, 10, 0),
     ),
   ];
 
-  void addNewExam(String courseName, String examDateTime) {
+  DateTime _selectedDay = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
+
+  void addNewExam(String courseName, DateTime examDateTime) {
     var exam = Exam(courseName: courseName, examDateTime: examDateTime);
 
+    scheduleNotification(exam);
     setState(() {
       exams.add(exam);
     });
@@ -70,10 +104,48 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void removeExam(int index) {
+  void removeExam(Exam exam) {
     setState(() {
-      exams.removeAt(index);
+      exams.remove(exam);
     });
+  }
+
+  List<Exam> _getEventsForDay(DateTime day) {
+    var eventsForDay = exams.where((element) {
+      var elementDateTime = element.examDateTime;
+      return elementDateTime.year == day.year &&
+          elementDateTime.month == day.month &&
+          elementDateTime.day == day.day;
+    }).toList();
+    return eventsForDay;
+  }
+
+  void scheduleNotification(Exam exam) async {
+    var androidPlatformChannelSpecifics = const AndroidNotificationDetails(
+      'alarm_notif',
+      'alarm_notif',
+      icon: 'ic_launcher',
+      largeIcon: DrawableResourceAndroidBitmap('ic_launcher'),
+    );
+
+    var formattedDateTime = new DateFormat('hh:mm').format(exam.examDateTime);
+
+    var platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+
+    // reminder before 15minutes of the examDateTime
+    var scheduledTime = exam.examDateTime.subtract(
+      Duration(minutes: 15),
+    );
+
+    await flutterLocalNotificationsPlugin.schedule(
+      0,
+      'Exam',
+      'You have incoming exam for the course: ${exam.courseName} at $formattedDateTime ',
+      scheduledTime,
+      platformChannelSpecifics,
+    );
   }
 
   @override
@@ -88,13 +160,31 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Container(
-        margin: const EdgeInsets.only(top: 20),
-        width: double.infinity,
-        child: exams.length <= 0
-            ? const Text('There are no exams entered!',
-                textAlign: TextAlign.center)
-            : ExamsList(exams: exams, removeExam: removeExam),
+      body: Column(
+        children: [
+          TableCalendar<Exam>(
+            firstDay: DateTime.utc(2010, 10, 16),
+            lastDay: DateTime.utc(2030, 3, 14),
+            focusedDay: _focusedDay,
+            selectedDayPredicate: (day) {
+              return isSameDay(_selectedDay, day);
+            },
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay; // update `_focusedDay` here as well
+              });
+            },
+            eventLoader: _getEventsForDay,
+          ),
+          SizedBox(height: 8.0),
+          Expanded(
+            child: ExamsList(
+              exams: _getEventsForDay(_selectedDay),
+              removeExam: removeExam,
+            ),
+          ),
+        ],
       ),
     );
   }

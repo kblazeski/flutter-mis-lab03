@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lab03/model/Exam.dart';
+import 'package:flutter_lab03/model/exam.dart';
+import 'package:intl/intl.dart';
 
 class ExamsList extends StatelessWidget {
   final List<Exam> exams;
-  final Function(int) removeExam;
+  final Function(Exam) removeExam;
 
   const ExamsList({
     Key? key,
@@ -24,11 +25,12 @@ class ExamsList extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            subtitle: Text(exams[index].examDateTime),
+            subtitle: Text(
+                '${new DateFormat('dd.MM.yyyy hh:mm').format(exams[index].examDateTime)}'),
             trailing: IconButton(
               icon: const Icon(Icons.delete),
               color: Colors.red,
-              onPressed: () => removeExam(index),
+              onPressed: () => removeExam(exams[index]),
             ),
           ),
         );

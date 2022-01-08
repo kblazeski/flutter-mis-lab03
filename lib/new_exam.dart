@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class NewExam extends StatefulWidget {
-  final Function(String, String) addNewExam;
+  final Function(String, DateTime) addNewExam;
   const NewExam({Key? key, required this.addNewExam}) : super(key: key);
 
   @override
@@ -10,17 +11,45 @@ class NewExam extends StatefulWidget {
 
 class _NewExamState extends State<NewExam> {
   final courseNameController = TextEditingController();
-  final dateAndTimeController = TextEditingController();
+
+  DateTime? _selectedDate;
 
   void submitData() {
-    if (courseNameController.text.isNotEmpty &&
-        dateAndTimeController.text.isNotEmpty) {
+    if (courseNameController.text.isNotEmpty && _selectedDate != null) {
       widget.addNewExam(
         courseNameController.text,
-        dateAndTimeController.text,
+        _selectedDate!,
       );
       Navigator.of(context).pop();
     }
+  }
+
+  void _presentDatePicker() {
+    showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2019),
+      lastDate: DateTime(3000),
+    ).then((pickedDate) {
+      if (pickedDate == null) {
+        return;
+      }
+
+      DateTime finalDate = pickedDate;
+
+      showTimePicker(context: context, initialTime: TimeOfDay.now())
+          .then((pickedTime) {
+        if (pickedTime == null) {
+          return;
+        }
+        finalDate = DateTime(pickedDate.year, pickedDate.month, pickedDate.day,
+            pickedTime.hour, pickedTime.minute);
+
+        setState(() {
+          _selectedDate = finalDate;
+        });
+      });
+    });
   }
 
   @override
@@ -39,19 +68,41 @@ class _NewExamState extends State<NewExam> {
                 ),
                 controller: courseNameController,
               ),
-              const SizedBox(
-                height: 25,
-              ),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Date and time of course exam',
-                  border: OutlineInputBorder(),
+              Container(
+                height: 70,
+                child: Row(
+                  children: [
+                    Flexible(
+                      fit: FlexFit.tight,
+                      child: Text(
+                        _selectedDate == null
+                            ? 'No Date Chosen!'
+                            : 'Picked Date: ${new DateFormat('dd.MM.yyyy hh:mm').format(_selectedDate!)}',
+                        style: TextStyle(
+                          fontSize: 17,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _presentDatePicker,
+                      child: Text(
+                        'Choose Date',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  ],
                 ),
-                controller: dateAndTimeController,
               ),
-              TextButton(
+              ElevatedButton(
                 onPressed: submitData,
-                child: const Text('Submit exam'),
+                child: const Text(
+                  'Submit exam',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               )
             ],
           ),
