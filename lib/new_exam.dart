@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 
 class NewExam extends StatefulWidget {
-  final Function(String, DateTime) addNewExam;
+  final Function(String, String, Location, DateTime) addNewExam;
   const NewExam({Key? key, required this.addNewExam}) : super(key: key);
 
   @override
@@ -11,13 +12,20 @@ class NewExam extends StatefulWidget {
 
 class _NewExamState extends State<NewExam> {
   final courseNameController = TextEditingController();
+  final locationNameController = TextEditingController();
 
   DateTime? _selectedDate;
 
-  void submitData() {
-    if (courseNameController.text.isNotEmpty && _selectedDate != null) {
+  Future<void> submitData() async {
+    if (courseNameController.text.isNotEmpty &&
+        _selectedDate != null &&
+        locationNameController.text.isNotEmpty) {
+      List<Location> locations =
+          await locationFromAddress(locationNameController.text);
       widget.addNewExam(
         courseNameController.text,
+        locationNameController.text,
+        locations[0],
         _selectedDate!,
       );
       Navigator.of(context).pop();
@@ -67,6 +75,16 @@ class _NewExamState extends State<NewExam> {
                   border: OutlineInputBorder(),
                 ),
                 controller: courseNameController,
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: 8),
+              ),
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Location Name',
+                  border: OutlineInputBorder(),
+                ),
+                controller: locationNameController,
               ),
               Container(
                 height: 70,

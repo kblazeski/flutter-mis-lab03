@@ -37,6 +37,12 @@ dependencies:
   table_calendar: ^3.0.3
   intl: ^0.17.0
   flutter_local_notifications: ^9.2.0
+  flutter_polyline_points: ^1.0.0
+  dio: '^4.0.0'
+  flutter_map: any
+  google_maps_flutter: ^2.1.1
+  location: ^4.2.0
+  geocoding: ^2.0.2
 
 dev_dependencies:
   flutter_test:

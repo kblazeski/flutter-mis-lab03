@@ -3,8 +3,10 @@ import 'package:flutter_lab03/exams_list.dart';
 import 'package:flutter_lab03/model/exam.dart';
 import 'package:flutter_lab03/new_exam.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:flutter_lab03/map.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -48,7 +50,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: '181103 - Flutter Lab 04'),
+      home: const MyHomePage(title: '181103 - Flutter Lab 05'),
     );
   }
 }
@@ -62,26 +64,25 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final List<Exam> exams = [
-    Exam(
-      courseName: 'Mobile Information Systems',
-      examDateTime: DateTime(2022, 1, 1, 17, 0),
-    ),
-    Exam(
-      courseName: 'Mobile Platforms and Programming',
-      examDateTime: DateTime(2022, 1, 8, 12, 30),
-    ),
-    Exam(
-      courseName: 'Web Based Systems',
-      examDateTime: DateTime(2022, 1, 21, 10, 0),
-    ),
-  ];
+  final List<Exam> exams = [];
+
+  bool isCalendar = false;
 
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
 
-  void addNewExam(String courseName, DateTime examDateTime) {
-    var exam = Exam(courseName: courseName, examDateTime: examDateTime);
+  void addNewExam(
+    String courseName,
+    String locationName,
+    Location location,
+    DateTime examDateTime,
+  ) {
+    var exam = Exam(
+      courseName: courseName,
+      examDateTime: examDateTime,
+      location: location,
+      locationName: locationName,
+    );
 
     scheduleNotification(exam);
     setState(() {
@@ -158,34 +159,40 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: const Icon(Icons.add),
             onPressed: () => openNewExamDialog(context),
           ),
+          IconButton(
+              icon: const Icon(Icons.change_circle),
+              onPressed: () => setState(() => isCalendar = !isCalendar)),
         ],
       ),
-      body: Column(
-        children: [
-          TableCalendar<Exam>(
-            firstDay: DateTime.utc(2010, 10, 16),
-            lastDay: DateTime.utc(2030, 3, 14),
-            focusedDay: _focusedDay,
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDay, day);
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay; // update `_focusedDay` here as well
-              });
-            },
-            eventLoader: _getEventsForDay,
-          ),
-          SizedBox(height: 8.0),
-          Expanded(
-            child: ExamsList(
-              exams: _getEventsForDay(_selectedDay),
-              removeExam: removeExam,
-            ),
-          ),
-        ],
-      ),
+      body: isCalendar
+          ? Column(
+              children: [
+                TableCalendar<Exam>(
+                  firstDay: DateTime.utc(2010, 10, 16),
+                  lastDay: DateTime.utc(2030, 3, 14),
+                  focusedDay: _focusedDay,
+                  selectedDayPredicate: (day) {
+                    return isSameDay(_selectedDay, day);
+                  },
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay =
+                          focusedDay; // update `_focusedDay` here as well
+                    });
+                  },
+                  eventLoader: _getEventsForDay,
+                ),
+                SizedBox(height: 8.0),
+                Expanded(
+                  child: ExamsList(
+                    exams: _getEventsForDay(_selectedDay),
+                    removeExam: removeExam,
+                  ),
+                ),
+              ],
+            )
+          : Map(exams: exams),
     );
   }
 }

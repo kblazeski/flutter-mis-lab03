@@ -26,7 +26,8 @@ class ExamsList extends StatelessWidget {
               ),
             ),
             subtitle: Text(
-                '${new DateFormat('dd.MM.yyyy hh:mm').format(exams[index].examDateTime)}'),
+              '${exams[index].locationName} ${new DateFormat('dd.MM.yyyy hh:mm').format(exams[index].examDateTime)}',
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.delete),
               color: Colors.red,
